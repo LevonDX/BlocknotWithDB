@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace BlocknotWithDB
 {
-    public class EntityBase
+    public abstract class EntityBase
     {
         public int Id { get; set; }
 
