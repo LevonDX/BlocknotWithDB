@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Data.Common;
+using System.Transactions;
 
 namespace BlocknotWithDB.Data
 {
@@ -20,23 +22,40 @@ namespace BlocknotWithDB.Data
 
         public async Task SaveChangesAsync()
         {
-            using SqlConnection connection = new SqlConnection(ConnectionString);
-
-            await connection.OpenAsync();
-
-            string insertCommand = "INSERT INTO Records (Name, Surname, Phone) " +
-                "VALUES (@Name, @Surname, @Phone)";
-
-            using SqlCommand command = new SqlCommand(insertCommand, connection);
-
-            foreach (Record record in Blocknot)
+            using (TransactionScope scope = new TransactionScope)
             {
-                command.Parameters.AddWithValue("@Name", record.Name);
-                command.Parameters.AddWithValue("@Surname", record.Surname);
-                command.Parameters.AddWithValue("@Phone", record.Phone);
+                using SqlConnection connection = new SqlConnection(ConnectionString);
 
-                await command.ExecuteNonQueryAsync();
+                await connection.OpenAsync();
+
+                //SqlTransaction? transaction = (await connection.BeginTransactionAsync()) as SqlTransaction;
+
+                string insertCommand = "INSERT INTO Records (Name, Surname, Phone) " +
+                    "VALUES (@Name, @Surname, @Phone)";
+
+                try
+                {
+                    using SqlCommand command = new SqlCommand(insertCommand, connection);
+
+                    //command.Transaction = transaction;
+
+                    foreach (Record record in Blocknot)
+                    {
+                        command.Parameters.AddWithValue("@Name", record.Name);
+                        command.Parameters.AddWithValue("@Surname", record.Surname);
+                        command.Parameters.AddWithValue("@Phone", record.Phone);
+
+                        await command.ExecuteNonQueryAsync();
+                    }
+                    scope.Complete();
+                }
+                catch (DbException)
+                {
+                    //await transaction!.RollbackAsync();
+                    throw;
+                }
             }
+            //await transaction!.CommitAsync();
         }
 
         public async Task LoadAsync()
@@ -50,7 +69,7 @@ namespace BlocknotWithDB.Data
 
             using SqlDataReader reader = await command.ExecuteReaderAsync();
 
-            while(await reader.ReadAsync())
+            while (await reader.ReadAsync())
             {
                 int id = (int)reader["Id"];
 

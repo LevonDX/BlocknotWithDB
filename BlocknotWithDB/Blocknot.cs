@@ -45,5 +45,13 @@ namespace BlocknotWithDB
         {
             get => _records[index];
         }
+
+        public  Record? this[string name]
+        {
+            get
+            {
+                return _records.FirstOrDefault(r=>r.Name == name);
+            }
+        }
     }
 }

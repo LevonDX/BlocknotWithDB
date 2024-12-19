@@ -9,7 +9,7 @@ namespace BlocknotWithDB
         {
             Blocknot blocknot = new Blocknot();
 
-            BlocknotDbContext dbContext = new BlocknotDbContext(blocknot);
+            IBlocknotRepo blocknotRepository = new BlocknotRepoEF(blocknot);
 
             DisplayMenu();
 
@@ -44,7 +44,7 @@ namespace BlocknotWithDB
 
                     blocknot.Add(record);
 
-                    await dbContext.SaveChangesAsync();    
+                    await blocknotRepository.SaveChangesAsync();    
 
                     break;
                 case MenuItems.RemoveRecord:
@@ -52,6 +52,17 @@ namespace BlocknotWithDB
                 case MenuItems.ShowRecords:
                     break;
                 case MenuItems.FindRecord:
+                    Console.Write("Enter name: ");
+                    string? recordName = Console.ReadLine();
+
+                    if(recordName is null)
+                    {
+                        Console.WriteLine("Invalid input. Try again.");
+                        break;
+                    }
+
+                    Record? foundRecord = blocknotRepository.GetRecordByNameAsync(recordName);
+
                     break;
                 case MenuItems.Exit:
                     break;
